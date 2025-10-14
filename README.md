@@ -1,5 +1,4 @@
 ﻿# Proyecto Gestión de Préstamos
-
 | Rama        | Responsable | Función                       |
 | ----------- | ----------- | ----------------------------- |
 | `clientes`  | Aldair      | CRUD de clientes              |
@@ -8,3 +7,4 @@
 | `usuarios`  | Compañero 4 | Login, roles y permisos       |
 | `reportes`  | Compañero 5 | Gráficos y estadísticas       |
 | `frontend`  | Compañero 6 | Interfaz (HTML o React)       |
+
