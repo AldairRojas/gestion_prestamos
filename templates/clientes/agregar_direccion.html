@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Agregar Dirección - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-geo-alt-plus"></i> Agregar Nueva Dirección
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="direccionForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.direccion_linea_1.id_for_label }}" class="form-label">
+                            {{ form.direccion_linea_1.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.direccion_linea_1 }}
+                        {% if form.direccion_linea_1.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.direccion_linea_1.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Dirección completa (calle, número, referencia)</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.distrito.id_for_label }}" class="form-label">
+                                    {{ form.distrito.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.distrito }}
+                                {% if form.distrito.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.distrito.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.ciudad.id_for_label }}" class="form-label">
+                                    {{ form.ciudad.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.ciudad }}
+                                {% if form.ciudad.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.ciudad.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.es_principal }}
+                            <label class="form-check-label" for="{{ form.es_principal.id_for_label }}">
+                                {{ form.es_principal.label }}
+                            </label>
+                        </div>
+                        {% if form.es_principal.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.es_principal.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Marcar si esta es la dirección principal del cliente</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'clientes:detalle_cliente' cliente.id %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Agregar Dirección
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Información del cliente -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-person"></i> Cliente
+                </h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Nombre:</strong> {{ cliente.nombre_completo }}</p>
+                <p><strong>Documento:</strong> {{ cliente.tipo_documento.nombre }}: {{ cliente.numero_documento }}</p>
+                <p><strong>Direcciones actuales:</strong> {{ cliente.direcciones.count }}</p>
+                
+                {% if cliente.direcciones.exists %}
+                <div class="mt-3">
+                    <h6>Direcciones existentes:</h6>
+                    {% for direccion in cliente.direcciones.all %}
+                    <div class="small text-muted mb-1">
+                        {% if direccion.es_principal %}
+                            <i class="bi bi-star-fill text-warning"></i> 
+                        {% endif %}
+                        {{ direccion.direccion_linea_1 }}, {{ direccion.distrito }}, {{ direccion.ciudad }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Formatear distrito y ciudad mientras se escribe
+    const distritoInput = document.querySelector('input[name="distrito"]');
+    const ciudadInput = document.querySelector('input[name="ciudad"]');
+    
+    function capitalizarTexto(input) {
+        input.addEventListener('input', function() {
+            let value = this.value;
+            // Capitalizar cada palabra
+            value = value.replace(/\b\w/g, function(char) {
+                return char.toUpperCase();
+            });
+            this.value = value;
+        });
+    }
+    
+    if (distritoInput) capitalizarTexto(distritoInput);
+    if (ciudadInput) capitalizarTexto(ciudadInput);
+    
+    // Validación del formulario
+    const form = document.getElementById('direccionForm');
+    form.addEventListener('submit', function(e) {
+        const direccion = document.querySelector('input[name="direccion_linea_1"]').value.trim();
+        const distrito = document.querySelector('input[name="distrito"]').value.trim();
+        const ciudad = document.querySelector('input[name="ciudad"]').value.trim();
+        
+        if (!direccion || !distrito || !ciudad) {
+            alert('Por favor, complete todos los campos obligatorios.');
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

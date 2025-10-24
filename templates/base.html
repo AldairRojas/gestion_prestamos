@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Usaremos Bootstrap para estilos rápidos -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <title>{% block title %}Gestión de Préstamos{% endblock %}</title>
+    {% block extra_head %}{% endblock %}
+    <style>
+        /* Estilos para sticky footer */
+        html, body {
+            height: 100%;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+        .content-wrapper {
+            flex: 1 0 auto; /* Permite que el contenido crezca y ocupe el espacio disponible */
+        }
+        footer {
+            flex-shrink: 0; /* Evita que el footer se encoja */
+        }
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            {% if user.is_authenticated %}
+                <a class="navbar-brand" href="{% url 'prestamos:dashboard' %}">Sistema Préstamos</a>
+            {% else %}
+                <a class="navbar-brand" href="{% url 'home' %}">Sistema Préstamos</a>
+            {% endif %}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    {% if user.is_authenticated %} {# Mostrar solo si está logueado #}
+                        <li class="nav-item">
+                            <!-- Enlace al dashboard -->
+                            <a class="nav-link {% if request.resolver_match.view_name == 'prestamos:dashboard' %}active{% endif %}"
+                               href="{% url 'prestamos:dashboard' %}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <!-- Enlace a la lista de préstamos -->
+                            <a class="nav-link {% if request.resolver_match.view_name == 'prestamos:lista_prestamos' %}active{% endif %}"
+                               href="{% url 'prestamos:lista_prestamos' %}">Préstamos</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <!-- Enlace a Clientes con dropdown -->
+                            <a class="nav-link dropdown-toggle {% if request.resolver_match.app_name == 'clientes' %}active{% endif %}"
+                               href="#" id="clientesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Clientes
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="clientesDropdown">
+                                <li><a class="dropdown-item" href="{% url 'clientes:lista_clientes' %}">
+                                    <i class="bi bi-people"></i> Lista de Clientes
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'clientes:crear_cliente' %}">
+                                    <i class="bi bi-person-plus"></i> Nuevo Cliente
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'clientes:lista_tipos_documento' %}">
+                                    <i class="bi bi-file-text"></i> Tipos de Documento
+                                </a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <!-- Enlace a Métodos de Pago -->
+                            <a class="nav-link {% if request.resolver_match.view_name == 'prestamos:lista_metodos_pago' %}active{% endif %}"
+                               href="{% url 'prestamos:lista_metodos_pago' %}">Métodos de Pago</a>
+                        </li>
+                        <li class="nav-item">
+                            <!-- Enlace a Reportes -->
+                            <a class="nav-link {% if request.resolver_match.view_name == 'prestamos:reportes' %}active{% endif %}"
+                               href="{% url 'prestamos:reportes' %}">Reportes</a>
+                        </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <!-- Mostrar nombre_completo si existe, sino email -->
+                                {{ user.nombre_completo|default:user.email }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                <!-- Enlace al Perfil -->
+                                <li><a class="dropdown-item" href="{% url 'accounts:perfil' %}">
+                                    <i class="bi bi-person-circle"></i> Mi Perfil
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <!-- Enlace de Logout CORRECTO usando un formulario POST -->
+                                <li>
+                                    <form method="post" action="{% url 'accounts:logout' %}" id="logout-form" style="display: none;">
+                                        {% csrf_token %}
+                                    </form>
+                                    <!-- Este enlace ejecuta el formulario oculto -->
+                                    <a class="dropdown-item" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <!-- Enlace de Login CORRECTO -->
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.view_name == 'accounts:login' %}active{% endif %}"
+                               href="{% url 'accounts:login' %}">Iniciar Sesión</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Mostrar mensajes flash de Django (ej: éxito al guardar, errores) -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Título de la página específica -->
+        <h1 class="mb-4">{% block page_title %}{{ titulo_pagina|default:"Gestión" }}{% endblock %}</h1>
+
+        <!-- Contenido principal de cada página -->
+        <main>
+            {% block content %}
+            <p>Bienvenido al sistema. Use el menú superior para navegar.</p>
+            {% endblock %}
+        </main>
+    </div>
+    </div>
+
+    <!-- Footer normal -->
+    <footer class="mt-5 py-3 bg-light text-center">
+        <div class="container">
+            <span class="text-muted">© {% now "Y" %} Sistema de Gestión de Préstamos</span>
+        </div>
+    </footer>
+
+    <!-- Scripts de Bootstrap (Bundle incluye Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

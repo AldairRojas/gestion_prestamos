@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Tipos de Documento - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h5 class="text-muted">Gestionar tipos de documento del sistema</h5>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{% url 'clientes:crear_tipo_documento' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nuevo Tipo de Documento
+        </a>
+    </div>
+</div>
+
+{% if tipos_documento %}
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Fecha de Creación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tipo in tipos_documento %}
+                        <tr>
+                            <td>
+                                <strong>{{ tipo.nombre }}</strong>
+                            </td>
+                            <td>
+                                {% if tipo.descripcion %}
+                                    {{ tipo.descripcion }}
+                                {% else %}
+                                    <span class="text-muted">Sin descripción</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ tipo.fecha_creacion|date:"d/m/Y H:i" }}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'clientes:editar_tipo_documento' tipo.pk %}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'clientes:eliminar_tipo_documento' tipo.pk %}" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="card shadow">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-file-text fs-1 text-muted"></i>
+            <h5 class="mt-3 text-muted">No hay tipos de documento registrados</h5>
+            <p class="text-muted">Comienza creando el primer tipo de documento del sistema.</p>
+            <a href="{% url 'clientes:crear_tipo_documento' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Crear Primer Tipo de Documento
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="bi bi-info-circle"></i> Información
+                </h6>
+                <p class="card-text mb-0">
+                    Los tipos de documento son utilizados para identificar a los clientes en el sistema. 
+                    Puedes crear, editar o eliminar tipos según las necesidades de tu negocio.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

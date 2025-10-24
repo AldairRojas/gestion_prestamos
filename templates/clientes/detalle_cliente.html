@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle Cliente - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Información Principal del Cliente -->
+    <div class="col-lg-8">
+        <!-- Datos Personales -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-person"></i> Información Personal
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-5">Nombres:</dt>
+                            <dd class="col-sm-7"><strong>{{ cliente.nombres }}</strong></dd>
+                            
+                            <dt class="col-sm-5">Apellidos:</dt>
+                            <dd class="col-sm-7"><strong>{{ cliente.apellidos }}</strong></dd>
+                            
+                            <dt class="col-sm-5">Documento:</dt>
+                            <dd class="col-sm-7">
+                                <span class="badge bg-secondary">{{ cliente.tipo_documento.nombre }}</span>
+                                <code class="ms-2">{{ cliente.numero_documento }}</code>
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-5">Email:</dt>
+                            <dd class="col-sm-7">
+                                {% if cliente.email %}
+                                    <a href="mailto:{{ cliente.email }}" class="text-decoration-none">
+                                        <i class="bi bi-envelope"></i> {{ cliente.email }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">No registrado</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-5">Teléfono:</dt>
+                            <dd class="col-sm-7">
+                                {% if cliente.telefono %}
+                                    <i class="bi bi-telephone"></i> {{ cliente.telefono }}
+                                {% else %}
+                                    <span class="text-muted">No registrado</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-5">Registrado:</dt>
+                            <dd class="col-sm-7">{{ cliente.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direcciones -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-geo-alt"></i> Direcciones ({{ cliente.direcciones.count }})
+                </h5>
+                <a href="{% url 'clientes:agregar_direccion' cliente.id %}" class="btn btn-sm btn-success">
+                    <i class="bi bi-plus"></i> Agregar
+                </a>
+            </div>
+            <div class="card-body">
+                {% if cliente.direcciones.exists %}
+                    <div class="row">
+                        {% for direccion in cliente.direcciones.all %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border {% if direccion.es_principal %}border-warning{% else %}border-light{% endif %}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title">
+                                                {% if direccion.es_principal %}
+                                                    <i class="bi bi-star-fill text-warning"></i> Dirección Principal
+                                                {% else %}
+                                                    Dirección {{ forloop.counter }}
+                                                {% endif %}
+                                            </h6>
+                                            <p class="card-text">
+                                                <strong>{{ direccion.direccion_linea_1 }}</strong><br>
+                                                {{ direccion.distrito }}, {{ direccion.ciudad }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-geo-alt text-muted" style="font-size: 3rem;"></i>
+                        <p class="mt-2">No hay direcciones registradas</p>
+                        <a href="{% url 'clientes:agregar_direccion' cliente.id %}" class="btn btn-outline-success">
+                            <i class="bi bi-plus"></i> Agregar Primera Dirección
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Préstamos del Cliente -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-credit-card"></i> Préstamos ({{ prestamos.count }})
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if prestamos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID Préstamo</th>
+                                    <th>Monto</th>
+                                    <th>Cuotas</th>
+                                    <th>Estado</th>
+                                    <th>Fecha</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for prestamo in prestamos %}
+                                <tr>
+                                    <td><code>...{{ prestamo.id|stringformat:"s"|slice:"-8:" }}</code></td>
+                                    <td>S/ {{ prestamo.monto_solicitado|floatformat:2 }}</td>
+                                    <td>{{ prestamo.numero_cuotas }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if prestamo.estado == 'Pagado' %}bg-success
+                                            {% elif prestamo.estado == 'En Atraso' %}bg-danger
+                                            {% elif prestamo.estado == 'Activo' %}bg-primary
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ prestamo.get_estado_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ prestamo.fecha_emision|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'prestamos:detalle_prestamo' prestamo.id %}" 
+                                           class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i> Ver
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if prestamos.count >= 10 %}
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Mostrando los últimos 10 préstamos</small>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-credit-card text-muted" style="font-size: 3rem;"></i>
+                        <p class="mt-2">Este cliente no tiene préstamos registrados</p>
+                        <a href="{% url 'prestamos:crear_prestamo' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-plus"></i> Crear Préstamo
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Lateral -->
+    <div class="col-lg-4">
+        <!-- Acciones -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-gear"></i> Acciones
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'clientes:editar_cliente' cliente.id %}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Editar Cliente
+                    </a>
+                    
+                    <a href="{% url 'clientes:agregar_direccion' cliente.id %}" class="btn btn-success">
+                        <i class="bi bi-geo-alt-plus"></i> Agregar Dirección
+                    </a>
+                    
+                    <a href="{% url 'clientes:lista_clientes' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Volver a Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-graph-up"></i> Resumen
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-primary">{{ cliente.direcciones.count }}</h4>
+                        <small class="text-muted">Direcciones</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success">{{ cliente.prestamos.count }}</h4>
+                        <small class="text-muted">Préstamos</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="small text-muted">
+                    <p><strong>Cliente desde:</strong> {{ cliente.fecha_creacion|date:"d/m/Y" }}</p>
+                    <p><strong>Última actualización:</strong> {{ cliente.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

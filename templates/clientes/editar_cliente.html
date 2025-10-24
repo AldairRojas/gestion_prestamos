@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Cliente - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pencil"></i> Editar Cliente
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="clienteForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.tipo_documento.id_for_label }}" class="form-label">
+                                    {{ form.tipo_documento.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.tipo_documento }}
+                                {% if form.tipo_documento.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.tipo_documento.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.numero_documento.id_for_label }}" class="form-label">
+                                    {{ form.numero_documento.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.numero_documento }}
+                                {% if form.numero_documento.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.numero_documento.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.nombres.id_for_label }}" class="form-label">
+                                    {{ form.nombres.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.nombres }}
+                                {% if form.nombres.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.nombres.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.apellidos.id_for_label }}" class="form-label">
+                                    {{ form.apellidos.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.apellidos }}
+                                {% if form.apellidos.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.apellidos.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">
+                                    {{ form.email.label }}
+                                </label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.email.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Opcional, pero recomendado para comunicación</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.telefono.id_for_label }}" class="form-label">
+                                    {{ form.telefono.label }}
+                                </label>
+                                {{ form.telefono }}
+                                {% if form.telefono.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.telefono.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Opcional, pero recomendado para contacto</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'clientes:detalle_cliente' cliente.id %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-check-circle"></i> Actualizar Cliente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Información del cliente -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> Información del Cliente
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Cliente desde:</strong> {{ cliente.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Última actualización:</strong> {{ cliente.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Direcciones:</strong> {{ cliente.direcciones.count }}</p>
+                        <p><strong>Préstamos:</strong> {{ cliente.prestamos.count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Formatear nombres y apellidos mientras se escribe
+    const nombresInput = document.querySelector('input[name="nombres"]');
+    const apellidosInput = document.querySelector('input[name="apellidos"]');
+    
+    function capitalizarTexto(input) {
+        input.addEventListener('input', function() {
+            let value = this.value;
+            // Capitalizar cada palabra
+            value = value.replace(/\b\w/g, function(char) {
+                return char.toUpperCase();
+            });
+            this.value = value;
+        });
+    }
+    
+    if (nombresInput) capitalizarTexto(nombresInput);
+    if (apellidosInput) capitalizarTexto(apellidosInput);
+    
+    // Validación del formulario
+    const form = document.getElementById('clienteForm');
+    form.addEventListener('submit', function(e) {
+        const nombres = document.querySelector('input[name="nombres"]').value.trim();
+        const apellidos = document.querySelector('input[name="apellidos"]').value.trim();
+        const numeroDoc = document.querySelector('input[name="numero_documento"]').value.trim();
+        
+        if (!nombres || !apellidos || !numeroDoc) {
+            alert('Por favor, complete todos los campos obligatorios.');
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

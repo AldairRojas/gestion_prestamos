@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de Clientes - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<!-- Filtros y Búsqueda -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="q" class="form-label">Buscar Cliente</label>
+                <input type="text" class="form-control" id="q" name="q" 
+                       value="{{ query|default:'' }}" placeholder="Nombre, apellido, documento o email...">
+            </div>
+            <div class="col-md-4">
+                <label for="tipo_documento" class="form-label">Tipo de Documento</label>
+                <select class="form-select" id="tipo_documento" name="tipo_documento">
+                    <option value="">Todos los tipos</option>
+                    {% for tipo in tipos_documento %}
+                        <option value="{{ tipo.id }}" {% if tipo_doc_selected == tipo.id %}selected{% endif %}>
+                            {{ tipo.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+                <a href="{% url 'clientes:lista_clientes' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Clientes -->
+{% if clientes %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-people"></i> Clientes ({{ clientes.count }})
+            </h5>
+            <a href="{% url 'clientes:crear_cliente' %}" class="btn btn-success">
+                <i class="bi bi-person-plus"></i> Nuevo Cliente
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Documento</th>
+                            <th>Contacto</th>
+                            <th>Direcciones</th>
+                            <th>Préstamos</th>
+                            <th>Fecha Registro</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in clientes %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ cliente.nombre_completo|default:"Sin nombre" }}</strong>
+                                    {% with cliente.direcciones.first as primera_dir %}
+                                        {% if primera_dir %}
+                                            <br><small class="text-muted">
+                                                <i class="bi bi-geo-alt"></i> {{ primera_dir.distrito|default_if_none:"" }}{% if primera_dir.ciudad %}, {{ primera_dir.ciudad }}{% endif %}
+                                            </small>
+                                        {% endif %}
+                                    {% endwith %}
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    {% if cliente.tipo_documento and cliente.tipo_documento.nombre %}
+                                        <span class="badge bg-secondary">{{ cliente.tipo_documento.nombre }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Sin tipo</span>
+                                    {% endif %}
+                                    <br><code>{{ cliente.numero_documento|default:"-" }}</code>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    {% if cliente.email %}
+                                        <i class="bi bi-envelope"></i> 
+                                        <a href="mailto:{{ cliente.email }}" class="text-decoration-none">{{ cliente.email }}</a>
+                                    {% else %}
+                                        <span class="text-muted">Sin email</span>
+                                    {% endif %}
+                                    {% if cliente.telefono %}
+                                        <br><i class="bi bi-telephone"></i> {{ cliente.telefono }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ cliente.direcciones.count|default:"0" }}</span>
+                                {% with cliente.direcciones.first as primera_dir %}
+                                    {% if primera_dir and primera_dir.es_principal %}
+                                        <br><small class="text-muted">
+                                            <i class="bi bi-star-fill text-warning"></i> Principal
+                                        </small>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ cliente.prestamos.count|default:"0" }}</span>
+                                {% with cliente.prestamos.first as ultimo_prestamo %}
+                                    {% if ultimo_prestamo and ultimo_prestamo.fecha_emision %}
+                                        <br><small class="text-muted">
+                                            Último: {{ ultimo_prestamo.fecha_emision|date:"d/m/Y" }}
+                                        </small>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ cliente.fecha_creacion|date:"d/m/Y"|default:"-" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'clientes:detalle_cliente' cliente.id %}" 
+                                       class="btn btn-sm btn-info" title= "Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+            <h4 class="text-muted mt-3">No hay clientes registrados</h4>
+            <p class="text-muted">
+                {% if query or tipo_doc_selected %}
+                    No se encontraron clientes con los filtros aplicados.
+                {% else %}
+                    Comienza agregando tu primer cliente al sistema.
+                {% endif %}
+            </p>
+            <a href="{% url 'clientes:crear_cliente' %}" class="btn btn-success btn-lg">
+                <i class="bi bi-person-plus"></i> Crear Primer Cliente
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

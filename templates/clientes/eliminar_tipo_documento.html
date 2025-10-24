@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar Tipo de Documento - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Eliminación
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if clientes_con_tipo > 0 %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>¡Atención!</strong> Este tipo de documento está siendo utilizado por 
+                        <strong>{{ clientes_con_tipo }}</strong> cliente{{ clientes_con_tipo|pluralize }}.
+                        <br><br>
+                        <strong>No se puede eliminar</strong> hasta que todos los clientes cambien a otro tipo de documento.
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'clientes:lista_tipos_documento' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver a la Lista
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>¿Estás seguro?</strong> Esta acción no se puede deshacer.
+                    </div>
+                    
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">Detalles del Tipo de Documento</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Nombre:</strong><br>
+                                    {{ tipo_documento.nombre }}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Descripción:</strong><br>
+                                    {% if tipo_documento.descripcion %}
+                                        {{ tipo_documento.descripcion }}
+                                    {% else %}
+                                        <span class="text-muted">Sin descripción</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted">Creado:</small><br>
+                                    <small>{{ tipo_documento.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted">Última actualización:</small><br>
+                                    <small>{{ tipo_documento.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'clientes:lista_tipos_documento' %}" class="btn btn-secondary me-md-2">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Eliminar Definitivamente
+                            </button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
