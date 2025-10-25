@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<!-- Tarjetas de Estadísticas -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Préstamos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_prestamos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-bank fs-1 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Préstamos Activos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ prestamos_activos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-arrow-up-circle fs-1 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Préstamos Pagados
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ prestamos_pagados }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-check-circle fs-1 text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Total Clientes
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_clientes }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-people fs-1 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tarjetas de Montos -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Monto Total Prestado</h6>
+                <i class="bi bi-bank fs-4 text-primary"></i>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h2 class="text-primary">S/ {{ monto_total_prestado|floatformat:2 }}</h2>
+                    <p class="text-muted">Total de préstamos otorgados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-success">Monto Total Pagado</h6>
+                <i class="bi bi-cash-coin fs-4 text-success"></i>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h2 class="text-success">S/ {{ monto_total_pagado|floatformat:2 }}</h2>
+                    <p class="text-muted">Total de pagos recibidos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contenido Principal -->
+<div class="row">
+    <!-- Préstamos Recientes -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Préstamos Recientes</h6>
+                <a href="{% url 'prestamos:lista_prestamos' %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-arrow-right"></i> Ver Todos
+                </a>
+            </div>
+            <div class="card-body">
+                {% if prestamos_recientes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Monto</th>
+                                    <th>Estado</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for prestamo in prestamos_recientes %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'prestamos:detalle_prestamo' prestamo.id %}" class="text-decoration-none">
+                                            {{ prestamo.cliente.nombre_completo|truncatechars:20 }}
+                                        </a>
+                                    </td>
+                                    <td>S/ {{ prestamo.monto_solicitado|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if prestamo.estado == 'Pagado' %}bg-success
+                                            {% elif prestamo.estado == 'En Atraso' %}bg-danger
+                                            {% elif prestamo.estado == 'Activo' %}bg-primary
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ prestamo.get_estado_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ prestamo.fecha_creacion|date:"d/m/Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">No hay préstamos registrados</p>
+                        <a href="{% url 'prestamos:crear_prestamo' %}" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Crear Primer Préstamo
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagos Recientes -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-success">Pagos Recientes</h6>
+                <i class="bi bi-credit-card fs-4 text-success"></i>
+            </div>
+            <div class="card-body">
+                {% if pagos_recientes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Monto</th>
+                                    <th>Método</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pago in pagos_recientes %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'prestamos:detalle_prestamo' pago.prestamo.id %}" class="text-decoration-none">
+                                            {{ pago.prestamo.cliente.nombre_completo|truncatechars:20 }}
+                                        </a>
+                                    </td>
+                                    <td>S/ {{ pago.monto_pagado|floatformat:2 }}</td>
+                                    <td>{{ pago.metodo_pago.nombre }}</td>
+                                    <td>{{ pago.fecha_pago|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-credit-card fs-1"></i>
+                        <p class="mt-2">No hay pagos registrados</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones Rápidas -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Acciones Rápidas</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'prestamos:crear_prestamo' %}" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i><br>
+                            <small>Crear Préstamo</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'clientes:crear_cliente' %}" class="btn btn-success w-100">
+                            <i class="bi bi-person-plus"></i><br>
+                            <small>Nuevo Cliente</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'prestamos:lista_metodos_pago' %}" class="btn btn-info w-100">
+                            <i class="bi bi-credit-card"></i><br>
+                            <small>Métodos de Pago</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'prestamos:lista_prestamos' %}" class="btn btn-warning w-100">
+                            <i class="bi bi-list-ul"></i><br>
+                            <small>Ver Préstamos</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+.text-xs {
+    font-size: 0.7rem;
+}
+.font-weight-bold {
+    font-weight: 700 !important;
+}
+.text-uppercase {
+    text-transform: uppercase !important;
+}
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+</style>
+{% endblock %}
