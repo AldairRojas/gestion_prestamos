@@ -82,7 +82,7 @@
 
 <!-- Tarjetas de Montos -->
 <div class="row mb-4">
-    <div class="col-lg-6 mb-4">
+    <div class="col-lg-4 mb-4">
         <div class="card shadow">
             <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                 <h6 class="m-0 font-weight-bold text-primary">Monto Total Prestado</h6>
@@ -96,7 +96,7 @@
             </div>
         </div>
     </div>
-    <div class="col-lg-6 mb-4">
+    <div class="col-lg-4 mb-4">
         <div class="card shadow">
             <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                 <h6 class="m-0 font-weight-bold text-success">Monto Total Pagado</h6>
@@ -106,6 +106,20 @@
                 <div class="text-center">
                     <h2 class="text-success">S/ {{ monto_total_pagado|floatformat:2 }}</h2>
                     <p class="text-muted">Total de pagos recibidos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-danger">Saldo Pendiente</h6>
+                <i class="bi bi-exclamation-circle fs-4 text-danger"></i>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h2 class="text-danger">S/ {{ saldo_pendiente_total|floatformat:2 }}</h2>
+                    <p class="text-muted">Total pendiente por cobrar</p>
                 </div>
             </div>
         </div>

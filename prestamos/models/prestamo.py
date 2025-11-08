@@ -30,6 +30,13 @@ class Préstamo(TimestampModel):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    numero_prestamo = models.PositiveIntegerField(
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name="Número de Préstamo",
+        help_text="Número secuencial del préstamo"
+    )
     cliente = models.ForeignKey(
         Cliente,
         on_delete=models.PROTECT, # No borrar cliente si tiene préstamos
@@ -99,8 +106,11 @@ class Préstamo(TimestampModel):
 
     def __str__(self):
         cliente_nombre = self.cliente.nombre_completo if self.cliente else "Cliente no asignado"
-        # Usamos :8 para mostrar solo los primeros 8 caracteres del UUID
-        return f"Préstamo ...{str(self.id)[:8]} - {cliente_nombre} ({self.monto_solicitado})"
+        # Usamos el número de préstamo si existe, sino el UUID truncado
+        if self.numero_prestamo:
+            return f"Préstamo #{self.numero_prestamo} - {cliente_nombre} (S/ {self.monto_solicitado})"
+        else:
+            return f"Préstamo ...{str(self.id)[:8]} - {cliente_nombre} (S/ {self.monto_solicitado})"
 
     # --- LÓGICA DE NEGOCIO ---
     @transaction.atomic # Asegura que o se crea el préstamo y todas las cuotas, o nada
@@ -111,6 +121,14 @@ class Préstamo(TimestampModel):
         """
         # Verificar si es nuevo usando el campo 'fecha_creacion' que se llena automáticamente
         es_nuevo = not hasattr(self, 'fecha_creacion') or self.fecha_creacion is None
+
+        # --- 0. Asignar número de préstamo si es nuevo y no tiene uno ---
+        if es_nuevo and not self.numero_prestamo:
+            # Obtener el último número de préstamo
+            from django.db.models import Max
+            ultimo_prestamo = Préstamo.objects.aggregate(Max('numero_prestamo'))
+            ultimo_numero = ultimo_prestamo['numero_prestamo__max']
+            self.numero_prestamo = (ultimo_numero or 0) + 1
 
         # --- 1. Calcular Totales (Solo si es nuevo) ---
         if es_nuevo:

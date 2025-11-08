@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de Préstamos - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<!-- Filtros y Búsqueda -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-8">
+                <label for="q" class="form-label">Buscar Préstamos</label>
+                <input type="text" class="form-control" id="q" name="q" 
+                       value="{{ query|default:'' }}" placeholder="Buscar por cliente, documento o ID de préstamo...">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+                {% if query %}
+                    <a href="{% url 'prestamos:lista_prestamos' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Limpiar
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Préstamos -->
+{% if prestamos %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-bank"></i> Préstamos 
+                {% if query %}
+                    ({{ prestamos.paginator.count }} resultado{{ prestamos.paginator.count|pluralize }} encontrado{{ prestamos.paginator.count|pluralize }})
+                {% else %}
+                    ({{ prestamos.paginator.count }} total)
+                {% endif %}
+            </h5>
+            <a href="{% url 'prestamos:crear_prestamo' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Crear Préstamo
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID Préstamo</th>
+                            <th>Cliente</th>
+                            <th>Monto del Préstamo</th>
+                            <th>Cuotas</th>
+                            <th>Tasa</th>
+                            <th>Fecha Emisión</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prestamo in prestamos %}
+                        <tr>
+                            <td>
+                                <code>#{{ prestamo.numero_prestamo }}</code>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ prestamo.cliente.nombre_completo|default:"N/A" }}</strong>
+                                    <br><small class="text-muted">{{ prestamo.cliente.numero_documento|default:"-" }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>S/ {{ prestamo.monto_solicitado|floatformat:2 }}</strong>
+                                    <br><small class="text-muted">Total: S/ {{ prestamo.monto_total_pagar|floatformat:2 }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ prestamo.numero_cuotas }}</span>
+                            </td>
+                            <td>
+                                <small>{{ prestamo.tasa_interes.nombre|default:"N/A" }}</small>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ prestamo.fecha_emision|date:"d/m/Y" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if prestamo.estado == 'Pagado' %}bg-success
+                                    {% elif prestamo.estado == 'En Atraso' %}bg-danger
+                                    {% elif prestamo.estado == 'Activo' %}bg-primary
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ prestamo.get_estado_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'prestamos:detalle_prestamo' prestamo.id %}" 
+                                       class="btn btn-sm btn-info" title="Ver Detalles">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if prestamo.estado == 'Activo' %}
+                                        <a href="{% url 'prestamos:registrar_pago' prestamo.id %}" 
+                                           class="btn btn-sm btn-success" title="Registrar Pago">
+                                            <i class="bi bi-credit-card"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controles de Paginación -->
+    {% if prestamos.has_other_pages %}
+        <nav aria-label="Paginación de préstamos" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if prestamos.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ prestamos.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" aria-label="Página anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&laquo;</span>
+                    </li>
+                {% endif %}
+
+                {% for i in prestamos.paginator.page_range %}
+                    {% if prestamos.number == i %}
+                        <li class="page-item active" aria-current="page">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if prestamos.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ prestamos.next_page_number }}{% if query %}&q={{ query }}{% endif %}" aria-label="Página siguiente">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&raquo;</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+
+{% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-bank text-muted" style="font-size: 4rem;"></i>
+            <h4 class="text-muted mt-3">
+                {% if query %}
+                    No se encontraron préstamos
+                {% else %}
+                    No hay préstamos registrados
+                {% endif %}
+            </h4>
+            <p class="text-muted">
+                {% if query %}
+                    No se encontraron préstamos que coincidan con "{{ query }}".
+                {% else %}
+                    Comienza agregando tu primer préstamo al sistema.
+                {% endif %}
+            </p>
+            <a href="{% url 'prestamos:crear_prestamo' %}" class="btn btn-success btn-lg">
+                <i class="bi bi-plus-circle"></i> Crear Primer Préstamo
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

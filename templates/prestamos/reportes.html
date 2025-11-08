@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<!-- Estadísticas Generales -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Préstamos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_prestamos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-bank fs-1 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Préstamos Activos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ prestamos_activos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-arrow-up-circle fs-1 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Préstamos Vencidos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ prestamos_vencidos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Monto Total Pagado
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">S/ {{ monto_total_pagado|floatformat:2 }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-cash-coin fs-1 text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas Financieras -->
+<div class="row mb-4">
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Saldo Pendiente Total</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h2 class="text-danger">S/ {{ saldo_pendiente_total|floatformat:2 }}</h2>
+                    <p class="text-muted">Total pendiente por cobrar</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-warning">Intereses Realmente Pagados</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h2 class="text-warning">S/ {{ total_intereses_real|floatformat:2 }}</h2>
+                    <p class="text-muted">Total de intereses cobrados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">Monto Total Prestado</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h2 class="text-success">S/ {{ monto_total_prestado|floatformat:2 }}</h2>
+                    <p class="text-muted">Capital total otorgado</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Préstamos por Estado -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Préstamos por Estado</h6>
+            </div>
+            <div class="card-body">
+                {% if prestamos_por_estado %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Estado</th>
+                                    <th>Cantidad</th>
+                                    <th>Monto Prestado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for estado in prestamos_por_estado %}
+                                <tr>
+                                    <td>
+                                        <span class="badge 
+                                            {% if estado.estado == 'Activo' %}bg-primary
+                                            {% elif estado.estado == 'Pagado' %}bg-success
+                                            {% elif estado.estado == 'En Atraso' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ estado.estado }}
+                                        </span>
+                                    </td>
+                                    <td>{{ estado.cantidad }}</td>
+                                    <td>S/ {{ estado.monto_total|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No hay datos disponibles.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Clientes -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Top 5 Clientes</h6>
+            </div>
+            <div class="card-body">
+                {% if top_clientes %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Préstamos</th>
+                                    <th>Monto Prestado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cliente in top_clientes %}
+                                <tr>
+                                    <td>{{ cliente.nombre_completo }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ cliente.total_prestamos }}</span>
+                                    </td>
+                                    <td>S/ {{ cliente.monto_total|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No hay datos disponibles.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas por Mes -->
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Préstamos por Mes (Últimos 6 meses)</h6>
+            </div>
+            <div class="card-body">
+                {% if meses_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Mes</th>
+                                    <th>Cantidad de Préstamos</th>
+                                    <th>Monto Prestado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mes in meses_stats %}
+                                <tr>
+                                    <td>{{ mes.mes }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ mes.prestamos }}</span>
+                                    </td>
+                                    <td>S/ {{ mes.monto|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No hay datos disponibles.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

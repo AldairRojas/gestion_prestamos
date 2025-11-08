@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Pago - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Formulario de Pago -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-credit-card"></i> Registrar Nuevo Pago
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="pagoForm">
+                    {% csrf_token %}
+                    
+                    <!-- Selección de Número de Cuotas -->
+                    <div class="mb-4">
+                        <label for="{{ form.numero_cuotas_pagar.id_for_label }}" class="form-label">
+                            {{ form.numero_cuotas_pagar.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.numero_cuotas_pagar }}
+                        <div class="form-text">{{ form.numero_cuotas_pagar.help_text }}</div>
+                        
+                        {% if form.numero_cuotas_pagar.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.numero_cuotas_pagar.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.metodo_pago.id_for_label }}" class="form-label">
+                                    {{ form.metodo_pago.label }} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    {{ form.metodo_pago }}
+                                    <a href="{% url 'prestamos:crear_metodo_pago' %}" class="btn btn-outline-secondary" target="_blank" title="Agregar nuevo método de pago">
+                                        <i class="bi bi-plus"></i>
+                                    </a>
+                                </div>
+                                {% if form.metodo_pago.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.metodo_pago.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.referencia.id_for_label }}" class="form-label">
+                                    {{ form.referencia.label }}
+                                </label>
+                                {{ form.referencia }}
+                                {% if form.referencia.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.referencia.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Resumen del Pago -->
+                    <div class="alert alert-info" id="resumenPago" style="display: none;">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-calculator"></i> Resumen del Pago
+                        </h6>
+                        <div id="detalleResumen"></div>
+                        <div class="mt-2">
+                            <strong>Total a Pagar: <span id="totalPagar" class="text-success">S/ 0.00</span></strong>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'prestamos:detalle_prestamo' prestamo.id %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success" id="btnRegistrar">
+                            <i class="bi bi-check-circle"></i> Registrar Pago
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Lateral con Información -->
+    <div class="col-lg-4">
+        <!-- Información del Préstamo -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> Información del Préstamo
+                </h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Cliente:</strong> {{ prestamo.cliente.nombre_completo }}</p>
+                <p><strong>Total a Pagar:</strong> S/ {{ prestamo.monto_total_pagar|floatformat:2 }}</p>
+                <p><strong>Cuotas:</strong> {{ prestamo.numero_cuotas }} {{ prestamo.get_frecuencia_pago_display }}</p>
+                <p><strong>Estado:</strong> 
+                    <span class="badge 
+                        {% if prestamo.estado == 'Activo' %}bg-primary{% endif %}">
+                        {{ prestamo.get_estado_display }}
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Cuotas Pendientes -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-calendar-x"></i> Cuotas Pendientes
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if cuotas_pendientes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Vencimiento</th>
+                                    <th class="text-end">Saldo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cuota in cuotas_pendientes|slice:":5" %}
+                                <tr>
+                                    <td>{{ cuota.numero_cuota }}</td>
+                                    <td>{{ cuota.fecha_vencimiento|date:"d/m/Y" }}</td>
+                                    <td class="text-end">S/ {{ cuota.saldo_pendiente|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% if cuotas_pendientes.count > 5 %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">
+                                        ... y {{ cuotas_pendientes.count|add:"-5" }} más
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3 p-2 bg-light rounded">
+                        <div class="d-flex justify-content-between">
+                            <strong>Total Pendiente:</strong>
+                            <strong class="text-danger">S/ {{ total_pendiente|floatformat:2 }}</strong>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                        <p class="mt-2">¡Todas las cuotas están pagadas!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Información de Distribución -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-square"></i> ¿Cómo funciona?
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="small text-muted">
+                    <p><strong>Pago secuencial:</strong> Se pagan las cuotas en orden cronológico, empezando por la primera pendiente.</p>
+                    
+                    <p><strong>Pago completo:</strong> Solo se pueden pagar cuotas completas, no pagos parciales.</p>
+                    
+                    <p><strong>Fecha automática:</strong> La fecha y hora se registran automáticamente al momento del pago.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('pagoForm');
+    const numeroCuotasSelect = document.querySelector('select[name="numero_cuotas_pagar"]');
+    const resumenPago = document.getElementById('resumenPago');
+    const detalleResumen = document.getElementById('detalleResumen');
+    const totalPagar = document.getElementById('totalPagar');
+    const btnRegistrar = document.getElementById('btnRegistrar');
+    
+    // Datos de las cuotas (extraídos del HTML)
+    const cuotasData = [];
+    {% for cuota in cuotas_pendientes %}
+    cuotasData.push({
+        numero: {{ cuota.numero_cuota }},
+        saldo: {{ cuota.saldo_pendiente|floatformat:2 }},
+        vencimiento: '{{ cuota.fecha_vencimiento|date:"d/m/Y" }}'
+    });
+    {% endfor %}
+    
+    function actualizarResumen() {
+        const numeroCuotas = parseInt(numeroCuotasSelect.value);
+        
+        if (!numeroCuotas || numeroCuotas === 0 || isNaN(numeroCuotas)) {
+            resumenPago.style.display = 'none';
+            btnRegistrar.disabled = true;
+            return;
+        }
+        
+        let total = 0;
+        let detalle = '<ul class="mb-0">';
+        
+        for (let i = 0; i < numeroCuotas && i < cuotasData.length; i++) {
+            const cuota = cuotasData[i];
+            total += cuota.saldo;
+            detalle += `<li>Cuota ${cuota.numero} - S/ ${cuota.saldo.toFixed(2)} (Vence: ${cuota.vencimiento})</li>`;
+        }
+        
+        detalle += '</ul>';
+        detalleResumen.innerHTML = detalle;
+        totalPagar.textContent = `S/ ${total.toFixed(2)}`;
+        
+        resumenPago.style.display = 'block';
+        btnRegistrar.disabled = false;
+    }
+    
+    // Agregar event listener al select
+    numeroCuotasSelect.addEventListener('change', actualizarResumen);
+    
+    // Validación del formulario
+    form.addEventListener('submit', function(e) {
+        const numeroCuotas = parseInt(numeroCuotasSelect.value);
+        
+        if (!numeroCuotas || numeroCuotas === 0) {
+            alert('Debe seleccionar el número de cuotas a pagar.');
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

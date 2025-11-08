@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar Tasa de Interés - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle text-warning"></i> {{ titulo_pagina }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle"></i> ¿Está seguro?
+                    </h6>
+                    <p>Está a punto de eliminar la tasa de interés <strong>"{{ tasa.nombre }}"</strong>.</p>
+                    
+                    {% if prestamos_con_tasa > 0 %}
+                        <div class="alert alert-danger mt-3" role="alert">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-x-circle"></i> No se puede eliminar
+                            </h6>
+                            <p>Esta tasa de interés no se puede eliminar porque está siendo usada en <strong>{{ prestamos_con_tasa }} préstamo{{ prestamos_con_tasa|pluralize }}</strong>.</p>
+                            <p>Para poder eliminarla, primero debe:</p>
+                            <ul>
+                                <li>Cambiar todos los préstamos que usan esta tasa a otra tasa</li>
+                                <li>O crear una nueva tasa con la configuración deseada</li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <p>Esta acción no se puede deshacer.</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Información de la tasa -->
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6>Información de la Tasa de Interés:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Nombre:</strong> {{ tasa.nombre }}</p>
+                                <p><strong>Tipo:</strong> {{ tasa.get_tipo_tasa_display }}</p>
+                                <p><strong>Valor:</strong> <span class="badge bg-info">{{ tasa.valor_porcentaje }}%</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Período:</strong> {{ tasa.get_periodo_display }}</p>
+                                <p><strong>Creado:</strong> {{ tasa.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                                <p><strong>Actualizado:</strong> {{ tasa.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a href="{% url 'prestamos:lista_tasas_interes' %}" class="btn btn-outline-secondary me-md-2">
+                        <i class="bi bi-arrow-left"></i> Cancelar
+                    </a>
+                    
+                    {% if prestamos_con_tasa == 0 %}
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está completamente seguro de que desea eliminar esta tasa de interés?')">
+                                <i class="bi bi-trash"></i> Eliminar Definitivamente
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

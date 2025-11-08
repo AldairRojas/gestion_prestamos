@@ -7,7 +7,6 @@ class TasaInteres(TimestampModel):
     """
     TIPO_TASA_CHOICES = [
         ('Simple', 'Simple'),
-        ('Compuesto', 'Compuesto'), # Aunque podríamos no usarlo inicialmente
     ]
     PERIODO_CHOICES = [
         ('Diario', 'Diario'),

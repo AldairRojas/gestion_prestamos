@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Préstamo - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-plus-circle"></i> Crear Nuevo Préstamo
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="prestamoForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.cliente.id_for_label }}" class="form-label">
+                                    {{ form.cliente.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.cliente }}
+                                {% if form.cliente.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.cliente.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <a href="{% url 'clientes:crear_cliente' %}" target="_blank" class="text-decoration-none">
+                                        <i class="bi bi-plus"></i> Crear nuevo cliente
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.tasa_interes.id_for_label }}" class="form-label">
+                                    {{ form.tasa_interes.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.tasa_interes }}
+                                {% if form.tasa_interes.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.tasa_interes.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.monto_solicitado.id_for_label }}" class="form-label">
+                                    {{ form.monto_solicitado.label }} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">S/</span>
+                                    {{ form.monto_solicitado }}
+                                </div>
+                                {% if form.monto_solicitado.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.monto_solicitado.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.numero_cuotas.id_for_label }}" class="form-label">
+                                    {{ form.numero_cuotas.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.numero_cuotas }}
+                                {% if form.numero_cuotas.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.numero_cuotas.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.frecuencia_pago.id_for_label }}" class="form-label">
+                                    {{ form.frecuencia_pago.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.frecuencia_pago }}
+                                {% if form.frecuencia_pago.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.frecuencia_pago.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.fecha_emision.id_for_label }}" class="form-label">
+                                    {{ form.fecha_emision.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.fecha_emision }}
+                                {% if form.fecha_emision.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.fecha_emision.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.fecha_primer_pago.id_for_label }}" class="form-label">
+                                    {{ form.fecha_primer_pago.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.fecha_primer_pago }}
+                                {% if form.fecha_primer_pago.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.fecha_primer_pago.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.garantia_descripcion.id_for_label }}" class="form-label">
+                            {{ form.garantia_descripcion.label }}
+                        </label>
+                        {{ form.garantia_descripcion }}
+                        {% if form.garantia_descripcion.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.garantia_descripcion.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'prestamos:lista_prestamos' %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" name="preview" class="btn btn-info me-md-2">
+                            <i class="bi bi-eye"></i> Ver Plan de Pagos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Información adicional -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> Información Importante
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="small text-muted">
+                    <p><strong>Campos obligatorios:</strong> Cliente, tasa de interés, monto, cuotas, fechas y frecuencia de pago.</p>
+                    <p><strong>Cálculo automático:</strong> El sistema calculará automáticamente los intereses y generará el plan de pagos.</p>
+                    <p><strong>Plan de pagos:</strong> Se creará automáticamente basado en la frecuencia y número de cuotas especificadas.</p>
+                    <p><strong>Estado inicial:</strong> El préstamo se creará en estado "Activo" y estará listo para recibir pagos.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validación del formulario
+    const form = document.getElementById('prestamoForm');
+    const montoInput = document.querySelector('input[name="monto_solicitado"]');
+    const cuotasInput = document.querySelector('input[name="numero_cuotas"]');
+    const fechaEmisionInput = document.querySelector('input[name="fecha_emision"]');
+    const fechaPrimerPagoInput = document.querySelector('input[name="fecha_primer_pago"]');
+    
+    // Formatear monto mientras se escribe
+    if (montoInput) {
+        montoInput.addEventListener('input', function() {
+            let value = this.value.replace(/[^0-9.]/g, '');
+            if (value && !isNaN(value)) {
+                this.value = parseFloat(value).toFixed(2);
+            }
+        });
+    }
+    
+    // Validación de fechas
+    if (fechaEmisionInput && fechaPrimerPagoInput) {
+        function validarFechas() {
+            const fechaEmision = new Date(fechaEmisionInput.value);
+            const fechaPrimerPago = new Date(fechaPrimerPagoInput.value);
+            
+            if (fechaEmision && fechaPrimerPago && fechaPrimerPago <= fechaEmision) {
+                fechaPrimerPagoInput.setCustomValidity('La fecha del primer pago debe ser posterior a la fecha de emisión');
+            } else {
+                fechaPrimerPagoInput.setCustomValidity('');
+            }
+        }
+        
+        fechaEmisionInput.addEventListener('change', validarFechas);
+        fechaPrimerPagoInput.addEventListener('change', validarFechas);
+    }
+    
+    // Validación del formulario al enviar
+    form.addEventListener('submit', function(e) {
+        const monto = parseFloat(montoInput.value);
+        const cuotas = parseInt(cuotasInput.value);
+        
+        if (monto && (monto < 100 || monto > 500000.00)) {
+            alert('El monto debe estar entre S/ 100.00 y S/ 500,000.00');
+            e.preventDefault();
+            return false;
+        }
+        
+        if (cuotas && (cuotas < 1 || cuotas > 120)) {
+            alert('El número de cuotas debe estar entre 1 y 120');
+            e.preventDefault();
+            return false;
+        }
+        
+        // Validar fechas
+        if (fechaEmisionInput && fechaPrimerPagoInput) {
+            const fechaEmision = new Date(fechaEmisionInput.value);
+            const fechaPrimerPago = new Date(fechaPrimerPagoInput.value);
+            
+            if (fechaPrimerPago <= fechaEmision) {
+                alert('La fecha del primer pago debe ser posterior a la fecha de emisión');
+                e.preventDefault();
+                return false;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

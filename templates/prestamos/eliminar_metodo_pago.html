@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar Método de Pago - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle text-warning"></i> {{ titulo_pagina }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle"></i> ¿Está seguro?
+                    </h6>
+                    <p>Está a punto de eliminar el método de pago <strong>"{{ metodo.nombre }}"</strong>.</p>
+                    
+                    {% if pagos_con_metodo > 0 %}
+                        <div class="alert alert-danger mt-3" role="alert">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-x-circle"></i> No se puede eliminar
+                            </h6>
+                            <p>Este método de pago no se puede eliminar porque está siendo usado en <strong>{{ pagos_con_metodo }} pago{{ pagos_con_metodo|pluralize }}</strong>.</p>
+                            <p>Para poder eliminarlo, primero debe:</p>
+                            <ul>
+                                <li>Cambiar todos los pagos que usan este método a otro método</li>
+                                <li>O marcar este método como inactivo en su lugar</li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <p>Esta acción no se puede deshacer.</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Información del método -->
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6>Información del Método de Pago:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Nombre:</strong> {{ metodo.nombre }}</p>
+                                <p><strong>Estado:</strong> 
+                                    <span class="badge {% if metodo.activo %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {% if metodo.activo %}Activo{% else %}Inactivo{% endif %}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Creado:</strong> {{ metodo.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                                <p><strong>Última actualización:</strong> {{ metodo.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a href="{% url 'prestamos:lista_metodos_pago' %}" class="btn btn-outline-secondary me-md-2">
+                        <i class="bi bi-arrow-left"></i> Cancelar
+                    </a>
+                    
+                    {% if pagos_con_metodo == 0 %}
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está completamente seguro de que desea eliminar este método de pago?')">
+                                <i class="bi bi-trash"></i> Eliminar Definitivamente
+                            </button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'prestamos:editar_metodo_pago' metodo.id %}" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Marcar como Inactivo
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

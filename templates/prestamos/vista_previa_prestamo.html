@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Vista Previa del Plan de Pagos - {{ block.super }}{% endblock %}
+
+{% block page_title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Información del Préstamo -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> Información del Préstamo
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Cliente:</strong><br>
+                        {{ form.cliente.value|default:"" }}
+                        {% if form.cliente.value %}
+                            {% for choice in form.cliente.field.queryset %}
+                                {% if choice.pk == form.cliente.value %}
+                                    {{ choice.nombre_completo }}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Monto Solicitado:</strong><br>
+                        <span class="text-primary h5">S/ {{ monto_solicitado|floatformat:2 }}</span>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Tasa de Interés:</strong><br>
+                        {{ form.tasa_interes.value|default:"" }}
+                        {% if form.tasa_interes.value %}
+                            {% for choice in form.tasa_interes.field.queryset %}
+                                {% if choice.pk == form.tasa_interes.value %}
+                                    {{ choice.nombre }}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Número de Cuotas:</strong><br>
+                        <span class="badge bg-info">{{ numero_cuotas }} cuota{{ numero_cuotas|pluralize }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Total Intereses:</strong><br>
+                        <span class="text-warning h6">S/ {{ monto_total_interes|floatformat:2 }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Total a Pagar:</strong><br>
+                        <span class="text-success h5">S/ {{ monto_total_pagar|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plan de Pagos -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-check"></i> Plan de Pagos
+                    </h5>
+                    <span class="badge bg-light text-dark">
+                        {{ plan_pagos|length }} cuota{{ plan_pagos|length|pluralize }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="text-center">#</th>
+                                <th>Vencimiento</th>
+                                <th class="text-end">Capital</th>
+                                <th class="text-end">Interés</th>
+                                <th class="text-end">Total Cuota</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cuota in plan_pagos %}
+                            <tr>
+                                <td class="text-center">{{ cuota.numero_cuota }}</td>
+                                <td>{{ cuota.fecha_vencimiento|date:"d/m/Y" }}</td>
+                                <td class="text-end">S/ {{ cuota.capital|floatformat:2 }}</td>
+                                <td class="text-end">S/ {{ cuota.interes|floatformat:2 }}</td>
+                                <td class="text-end">
+                                    <strong>S/ {{ cuota.total|floatformat:2 }}</strong>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary">Pendiente</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="3" class="text-end">Totales:</th>
+                                <th class="text-end">S/ {{ monto_total_interes|floatformat:2 }}</th>
+                                <th class="text-end">
+                                    <strong>S/ {{ monto_total_pagar|floatformat:2 }}</strong>
+                                </th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen de Totales -->
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 bg-light">
+                            <h6 class="text-muted mb-2">Monto Principal</h6>
+                            <h4 class="text-primary mb-0">S/ {{ monto_solicitado|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 bg-light">
+                            <h6 class="text-muted mb-2">Total Intereses</h6>
+                            <h4 class="text-warning mb-0">S/ {{ monto_total_interes|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 bg-success text-white">
+                            <h6 class="mb-2">Total a Pagar</h6>
+                            <h3 class="mb-0">S/ {{ monto_total_pagar|floatformat:2 }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Revisa cuidadosamente:</strong> Una vez que confirmes, el préstamo será creado y el plan de pagos se generará automáticamente.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'prestamos:crear_prestamo' %}" class="btn btn-secondary me-md-2">
+                            <i class="bi bi-arrow-left"></i> Volver y Modificar
+                        </a>
+                        <button type="submit" name="confirmar" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Confirmar y Crear Préstamo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .table th {
+        vertical-align: middle;
+    }
+    .table td {
+        vertical-align: middle;
+    }
+    .border {
+        border-width: 2px !important;
+    }
+</style>
+{% endblock %}

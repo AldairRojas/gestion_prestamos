@@ -70,10 +70,20 @@
                                 </a></li>
                             </ul>
                         </li>
-                        <li class="nav-item">
-                            <!-- Enlace a Métodos de Pago -->
-                            <a class="nav-link {% if request.resolver_match.view_name == 'prestamos:lista_metodos_pago' %}active{% endif %}"
-                               href="{% url 'prestamos:lista_metodos_pago' %}">Métodos de Pago</a>
+                        <li class="nav-item dropdown">
+                            <!-- Enlace a Métodos de Pago con dropdown -->
+                            <a class="nav-link dropdown-toggle {% if 'prestamos:lista_metodos_pago' in request.resolver_match.view_name or 'prestamos:lista_tasas_interes' in request.resolver_match.view_name %}active{% endif %}"
+                               href="#" id="configDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Configuración
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="configDropdown">
+                                <li><a class="dropdown-item" href="{% url 'prestamos:lista_metodos_pago' %}">
+                                    <i class="bi bi-credit-card"></i> Métodos de Pago
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'prestamos:lista_tasas_interes' %}">
+                                    <i class="bi bi-percent"></i> Tasas de Interés
+                                </a></li>
+                            </ul>
                         </li>
                         <li class="nav-item">
                             <!-- Enlace a Reportes -->

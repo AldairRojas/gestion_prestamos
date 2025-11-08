@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-@_5r$%!0@^@pq+#hoi3=o=$^48e@21#&9((qi24u9hj7w%$b0&'
+SECRET_KEY = 'django-insecure-uba_v#-88(&d(j(cf7(7=s*ta2battdf&u(vh&66d1xxb0ikv2'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True  # Cambiar a False en producción
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'tu-dominio.com']  # Agregar tu dominio en producción
 
 
 # Application definition
@@ -35,9 +36,12 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',
+    'django.contrib.messages', 
     'django.contrib.staticfiles',
 
+    'core.apps.CoreConfig',
+    'accounts.apps.AccountsConfig',
+    'clientes.apps.ClientesConfig',
     'prestamos.apps.PrestamosConfig',
 ]
 
@@ -56,13 +60,15 @@ ROOT_URLCONF = 'proyecto_prestamos.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                
             ],
         },
     },
@@ -76,8 +82,12 @@ WSGI_APPLICATION = 'proyecto_prestamos.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'db_prestamos',      
+        'USER': 'admin_prestamos',    
+        'PASSWORD': 'admin1234',      
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
@@ -104,9 +114,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-pe'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Lima'
 
 USE_I18N = True
 
@@ -122,3 +132,8 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'accounts.Usuario'
+LOGIN_URL = 'accounts:login' # A dónde redirigir si se necesita login (@login_required)
+LOGIN_REDIRECT_URL = 'prestamos:dashboard' # A dónde ir DESPUÉS de un login exitoso
+LOGOUT_REDIRECT_URL = 'home' # A dónde ir DESPUÉS de un logout exitoso

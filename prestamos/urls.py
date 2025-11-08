@@ -28,4 +28,10 @@ urlpatterns = [
     path('metodos-pago/crear/', views.crear_metodo_pago, name='crear_metodo_pago'),
     path('metodos-pago/<int:pk>/editar/', views.editar_metodo_pago, name='editar_metodo_pago'),
     path('metodos-pago/<int:pk>/eliminar/', views.eliminar_metodo_pago, name='eliminar_metodo_pago'),
+    
+    # URLs para tasas de interés
+    path('tasas-interes/', views.lista_tasas_interes, name='lista_tasas_interes'),
+    path('tasas-interes/crear/', views.crear_tasa_interes, name='crear_tasa_interes'),
+    path('tasas-interes/<int:pk>/editar/', views.editar_tasa_interes, name='editar_tasa_interes'),
+    path('tasas-interes/<int:pk>/eliminar/', views.eliminar_tasa_interes, name='eliminar_tasa_interes'),
 ]

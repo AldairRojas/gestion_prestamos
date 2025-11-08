@@ -249,7 +249,7 @@ class MetodoPagoForm(forms.ModelForm):
         widgets = {
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ej: Transferencia Bancaria, Yape, Plin, etc.'
+                'placeholder': 'Ej: Transferencia Bancaria, Efectivo, Depósito Bancario, etc.'
             }),
             'activo': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
@@ -284,3 +284,78 @@ class MetodoPagoForm(forms.ModelForm):
                 raise ValidationError('Ya existe un método de pago con este nombre.')
         
         return nombre
+
+
+class TasaInteresForm(forms.ModelForm):
+    """
+    Formulario para crear y editar tasas de interés.
+    """
+    
+    class Meta:
+        model = TasaInteres
+        fields = ['nombre', 'tipo_tasa', 'valor_porcentaje', 'periodo']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Tasa Personal, Tasa Comercial, etc.'
+            }),
+            'tipo_tasa': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'valor_porcentaje': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0.01',
+                'max': '100.00',
+                'placeholder': '0.00'
+            }),
+            'periodo': forms.Select(attrs={
+                'class': 'form-select'
+            })
+        }
+        labels = {
+            'nombre': 'Nombre de la Tasa',
+            'tipo_tasa': 'Tipo de Tasa',
+            'valor_porcentaje': 'Valor (%)',
+            'periodo': 'Período'
+        }
+    
+    def clean_nombre(self):
+        """
+        Limpiar y validar el nombre de la tasa.
+        """
+        nombre = self.cleaned_data.get('nombre')
+        
+        if nombre:
+            # Limpiar espacios en blanco y capitalizar
+            nombre = ' '.join(nombre.strip().split())
+            nombre = nombre.title()
+            
+            # Validar longitud
+            if len(nombre) > 100:
+                raise ValidationError('El nombre no puede exceder 100 caracteres.')
+            
+            # Verificar unicidad (excluyendo la instancia actual si estamos editando)
+            queryset = TasaInteres.objects.filter(nombre=nombre)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise ValidationError('Ya existe una tasa de interés con este nombre.')
+        
+        return nombre
+    
+    def clean_valor_porcentaje(self):
+        """
+        Validar que el valor esté en un rango válido.
+        """
+        valor = self.cleaned_data.get('valor_porcentaje')
+        
+        if valor is not None:
+            if valor <= 0:
+                raise ValidationError('El valor debe ser mayor a 0.')
+            
+            if valor > 100:
+                raise ValidationError('El valor no puede exceder 100%.')
+        
+        return valor

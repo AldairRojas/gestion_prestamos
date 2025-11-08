@@ -3,9 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction, models
 from django.utils import timezone
-from decimal import Decimal
-from .models import Préstamo, Pago, MetodoPago, PlanPago
-from .forms import PagoForm, PrestamoForm, MetodoPagoForm
+from decimal import Decimal, ROUND_HALF_UP
+from .models import Préstamo, Pago, MetodoPago, PlanPago, TasaInteres
+from .forms import PagoForm, PrestamoForm, MetodoPagoForm, TasaInteresForm
 from clientes.models import Cliente
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
@@ -60,6 +60,12 @@ def dashboard(request):
     
     meses_stats.reverse()  # Mostrar del más antiguo al más reciente
     
+    # Calcular saldo pendiente total sumando los saldos pendientes de todas las cuotas
+    from .models import PlanPago
+    saldo_pendiente_total = PlanPago.objects.aggregate(
+        total=Sum('saldo_pendiente')
+    )['total'] or 0
+    
     context = {
         'titulo_pagina': 'Dashboard',
         'total_prestamos': total_prestamos,
@@ -68,6 +74,7 @@ def dashboard(request):
         'total_clientes': total_clientes,
         'monto_total_prestado': monto_total_prestado,
         'monto_total_pagado': monto_total_pagado,
+        'saldo_pendiente_total': saldo_pendiente_total,
         'prestamos_recientes': prestamos_recientes,
         'pagos_recientes': pagos_recientes,
         'meses_stats': meses_stats,
@@ -134,7 +141,13 @@ def detalle_prestamo(request, pk):
     cuotas = prestamo.plan_pagos.all()
     cuotas_pagadas = cuotas.filter(estado='Pagada').count()
     total_pagado = sum(cuota.monto_pagado for cuota in cuotas)
-    saldo_pendiente = prestamo.monto_total_pagar - total_pagado
+    # El saldo pendiente debe calcularse sumando los saldos pendientes de cada cuota
+    # (ya que los montos pueden haber cambiado por pagos anticipados con intereses reducidos)
+    saldo_pendiente = sum(cuota.saldo_pendiente for cuota in cuotas)
+    # Calcular intereses reales pagados (pueden ser menores si hubo pagos anticipados)
+    total_intereses_real = sum(cuota.monto_interes for cuota in cuotas)
+    # Calcular monto total real a pagar (sumando el monto_total_cuota de cada cuota)
+    monto_total_real = sum(cuota.monto_total_cuota for cuota in cuotas)
     
     # Pasamos el objeto 'prestamo' (que ahora incluye el plan de pagos) a la plantilla
     context = {
@@ -142,7 +155,9 @@ def detalle_prestamo(request, pk):
         'cuotas_pagadas': cuotas_pagadas,
         'total_pagado': total_pagado,
         'saldo_pendiente': saldo_pendiente,
-        'titulo_pagina': f"Detalle Préstamo ...{str(prestamo.id)[:8]}" # Título para base.html
+        'total_intereses_real': total_intereses_real,
+        'monto_total_real': monto_total_real,
+        'titulo_pagina': f"Detalle Préstamo #{prestamo.numero_prestamo}" # Título para base.html
         }
     return render(request, 'prestamos/detalle_prestamo.html', context)
 
@@ -173,7 +188,11 @@ def registrar_pago(request, pk):
                     referencia = form.cleaned_data.get('referencia', '')
                     
                     # Crear el pago con fecha automática
-                    pago = Pago.objects.create(
+                    # El método save() del modelo Pago manejará automáticamente:
+                    # - La distribución del monto entre las cuotas
+                    # - La aplicación de la ley peruana (intereses proporcionales en pagos anticipados)
+                    # Establecemos los IDs de cuotas como atributo temporal antes de crear el pago
+                    pago = Pago(
                         prestamo=prestamo,
                         monto_pagado=monto_total,
                         metodo_pago=metodo_pago,
@@ -181,16 +200,10 @@ def registrar_pago(request, pk):
                         registrado_por=request.user,
                         fecha_pago=timezone.now()  # Fecha automática
                     )
-                    
-                    # Marcar las cuotas seleccionadas como pagadas
-                    PlanPago.objects.filter(
-                        id__in=cuotas_seleccionadas,
-                        prestamo=prestamo
-                    ).update(
-                        estado='Pagada',
-                        monto_pagado=models.F('monto_total_cuota'),
-                        saldo_pendiente=0
-                    )
+                    # Establecer los IDs de cuotas como atributo temporal para que save() los use
+                    pago._cuotas_ids = cuotas_seleccionadas
+                    # Guardar el pago - save() leerá _cuotas_ids y distribuirá solo entre esas cuotas
+                    pago.save()
                     
                     # Verificar si el préstamo está completamente pagado
                     cuotas_pendientes = PlanPago.objects.filter(
@@ -223,7 +236,7 @@ def registrar_pago(request, pk):
         'form': form,
         'cuotas_pendientes': cuotas_pendientes,
         'total_pendiente': total_pendiente,
-        'titulo_pagina': f'Registrar Pago - Préstamo ...{str(prestamo.id)[:8]}'
+        'titulo_pagina': f'Registrar Pago - Préstamo #{prestamo.numero_prestamo}'
     }
     
     return render(request, 'prestamos/registrar_pago.html', context)
@@ -232,23 +245,165 @@ def registrar_pago(request, pk):
 @login_required
 def crear_prestamo(request):
     """
-    Permite crear un nuevo préstamo.
+    Permite crear un nuevo préstamo con vista previa del plan de pagos.
     """
-    if request.method == 'POST':
-        form = PrestamoForm(request.POST)
-        if form.is_valid():
+    # Verificar si estamos en el paso de confirmación
+    if request.method == 'POST' and 'confirmar' in request.POST:
+        # Si viene del formulario de confirmación, crear el préstamo
+        # Recuperamos los datos del formulario original desde la sesión
+        if 'prestamo_data' in request.session:
             try:
+                from datetime import date
+                prestamo_data = request.session['prestamo_data']
                 with transaction.atomic():
-                    # Crear el préstamo
-                    prestamo = form.save(commit=False)
-                    prestamo.creado_por = request.user
-                    prestamo.save()
+                    # Convertir strings ISO de vuelta a objetos date
+                    fecha_emision = date.fromisoformat(prestamo_data['fecha_emision']) if isinstance(prestamo_data['fecha_emision'], str) else prestamo_data['fecha_emision']
+                    fecha_primer_pago = date.fromisoformat(prestamo_data['fecha_primer_pago']) if isinstance(prestamo_data['fecha_primer_pago'], str) else prestamo_data['fecha_primer_pago']
                     
-                    messages.success(request, f'Préstamo de S/ {prestamo.monto_solicitado} creado exitosamente para {prestamo.cliente.nombre_completo}.')
+                    # Crear el préstamo con los datos guardados
+                    from .models import Préstamo
+                    prestamo = Préstamo.objects.create(
+                        cliente_id=prestamo_data['cliente_id'],
+                        tasa_interes_id=prestamo_data['tasa_interes_id'],
+                        monto_solicitado=Decimal(str(prestamo_data['monto_solicitado'])),
+                        numero_cuotas=prestamo_data['numero_cuotas'],
+                        frecuencia_pago=prestamo_data['frecuencia_pago'],
+                        fecha_emision=fecha_emision,
+                        fecha_primer_pago=fecha_primer_pago,
+                        garantia_descripcion=prestamo_data.get('garantia_descripcion', ''),
+                        creado_por=request.user
+                    )
+                    
+                    # Limpiar la sesión
+                    del request.session['prestamo_data']
+                    
+                    messages.success(request, f'Préstamo de S/ {prestamo.monto_solicitado:.2f} creado exitosamente para {prestamo.cliente.nombre_completo}.')
                     return redirect('prestamos:detalle_prestamo', pk=prestamo.id)
                     
             except Exception as e:
                 messages.error(request, f'Error al crear el préstamo: {str(e)}')
+        else:
+            messages.error(request, 'Error: No se encontraron los datos del préstamo.')
+            return redirect('prestamos:crear_prestamo')
+    
+    # Verificar si estamos en el paso de vista previa
+    elif request.method == 'POST' and 'preview' in request.POST:
+        form = PrestamoForm(request.POST)
+        if form.is_valid():
+            # Guardamos los datos en la sesión para confirmar después
+            # Convertir fechas a strings ISO para evitar problemas de serialización JSON
+            from datetime import date
+            fecha_emision = form.cleaned_data['fecha_emision']
+            fecha_primer_pago = form.cleaned_data['fecha_primer_pago']
+            
+            prestamo_data = {
+                'cliente_id': form.cleaned_data['cliente'].id,
+                'tasa_interes_id': form.cleaned_data['tasa_interes'].id,
+                'monto_solicitado': float(form.cleaned_data['monto_solicitado']),
+                'numero_cuotas': form.cleaned_data['numero_cuotas'],
+                'frecuencia_pago': form.cleaned_data['frecuencia_pago'],
+                'fecha_emision': fecha_emision.isoformat() if isinstance(fecha_emision, date) else str(fecha_emision),
+                'fecha_primer_pago': fecha_primer_pago.isoformat() if isinstance(fecha_primer_pago, date) else str(fecha_primer_pago),
+                'garantia_descripcion': form.cleaned_data.get('garantia_descripcion', ''),
+            }
+            request.session['prestamo_data'] = prestamo_data
+            
+            # Calcular el plan de pagos para mostrar en vista previa
+            from .models import TasaInteres
+            from dateutil.relativedelta import relativedelta
+            
+            tasa_interes = form.cleaned_data['tasa_interes']
+            monto_solicitado = form.cleaned_data['monto_solicitado']
+            numero_cuotas = form.cleaned_data['numero_cuotas']
+            frecuencia_pago = form.cleaned_data['frecuencia_pago']
+            fecha_primer_pago = form.cleaned_data['fecha_primer_pago']
+            
+            # Calcular intereses y totales
+            if tasa_interes.tipo_tasa == 'Simple':
+                tasa_porcentaje = tasa_interes.valor_porcentaje / Decimal('100')
+                
+                # Ajustar la tasa según el período
+                if tasa_interes.periodo == 'Anual':
+                    if frecuencia_pago == 'Mensual':
+                        tasa_ajustada = tasa_porcentaje / Decimal('12')
+                    elif frecuencia_pago == 'Quincenal':
+                        tasa_ajustada = tasa_porcentaje / Decimal('24')
+                    elif frecuencia_pago == 'Semanal':
+                        tasa_ajustada = tasa_porcentaje / Decimal('52')
+                    else:
+                        tasa_ajustada = tasa_porcentaje
+                elif tasa_interes.periodo == 'Mensual':
+                    if frecuencia_pago == 'Quincenal':
+                        tasa_ajustada = tasa_porcentaje / Decimal('2')
+                    elif frecuencia_pago == 'Semanal':
+                        tasa_ajustada = tasa_porcentaje / Decimal('4')
+                    else:
+                        tasa_ajustada = tasa_porcentaje
+                else:
+                    tasa_ajustada = tasa_porcentaje
+                
+                # Calcular interés por cuota
+                interes_por_cuota = (monto_solicitado * tasa_ajustada).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                monto_total_interes = interes_por_cuota * numero_cuotas
+                monto_total_pagar = monto_solicitado + monto_total_interes
+                
+                # Generar plan de pagos
+                from .models import PlanPago
+                capital_por_cuota = (monto_solicitado / numero_cuotas).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                plan_pagos = []
+                
+                fecha_cuota = fecha_primer_pago
+                total_capital_asignado = Decimal('0.00')
+                total_interes_asignado = Decimal('0.00')
+                
+                for i in range(1, numero_cuotas + 1):
+                    if i == numero_cuotas:
+                        capital_cuota = monto_solicitado - total_capital_asignado
+                        interes_cuota = monto_total_interes - total_interes_asignado
+                    else:
+                        capital_cuota = capital_por_cuota
+                        interes_cuota = interes_por_cuota
+                        total_capital_asignado += capital_cuota
+                        total_interes_asignado += interes_cuota
+                    
+                    total_cuota = capital_cuota + interes_cuota
+                    plan_pagos.append({
+                        'numero_cuota': i,
+                        'fecha_vencimiento': fecha_cuota,
+                        'capital': capital_cuota,
+                        'interes': interes_cuota,
+                        'total': total_cuota
+                    })
+                    
+                    # Calcular siguiente fecha
+                    if frecuencia_pago == 'Mensual':
+                        fecha_cuota += relativedelta(months=1)
+                    elif frecuencia_pago == 'Quincenal':
+                        fecha_cuota += relativedelta(weeks=2)
+                    elif frecuencia_pago == 'Semanal':
+                        fecha_cuota += relativedelta(weeks=1)
+            
+            context = {
+                'form': form,
+                'plan_pagos': plan_pagos,
+                'monto_solicitado': monto_solicitado,
+                'monto_total_interes': monto_total_interes,
+                'monto_total_pagar': monto_total_pagar,
+                'numero_cuotas': numero_cuotas,
+                'titulo_pagina': 'Vista Previa - Plan de Pagos'
+            }
+            
+            return render(request, 'prestamos/vista_previa_prestamo.html', context)
+    
+    # Paso inicial: mostrar formulario
+    elif request.method == 'POST':
+        form = PrestamoForm(request.POST)
+        if not form.is_valid():
+            context = {
+                'form': form,
+                'titulo_pagina': 'Crear Nuevo Préstamo'
+            }
+            return render(request, 'prestamos/crear_prestamo.html', context)
     else:
         form = PrestamoForm()
     
@@ -280,6 +435,17 @@ def reportes(request):
     
     monto_total_pagado = Pago.objects.aggregate(
         total=Sum('monto_pagado')
+    )['total'] or 0
+    
+    # Calcular saldo pendiente total sumando los saldos pendientes de todas las cuotas
+    from .models import PlanPago
+    saldo_pendiente_total = PlanPago.objects.aggregate(
+        total=Sum('saldo_pendiente')
+    )['total'] or 0
+    
+    # Calcular intereses reales pagados sumando los intereses de todas las cuotas
+    total_intereses_real = PlanPago.objects.aggregate(
+        total=Sum('monto_interes')
     )['total'] or 0
     
     # Préstamos por estado
@@ -322,6 +488,8 @@ def reportes(request):
         'prestamos_vencidos': prestamos_vencidos,
         'monto_total_prestado': monto_total_prestado,
         'monto_total_pagado': monto_total_pagado,
+        'saldo_pendiente_total': saldo_pendiente_total,
+        'total_intereses_real': total_intereses_real,
         'prestamos_por_estado': prestamos_por_estado,
         'top_clientes': top_clientes,
         'meses_stats': meses_stats,
@@ -421,3 +589,101 @@ def eliminar_metodo_pago(request, pk):
     }
     
     return render(request, 'prestamos/eliminar_metodo_pago.html', context)
+
+
+# ===== VISTAS PARA GESTIÓN DE TASAS DE INTERÉS =====
+
+@login_required
+def lista_tasas_interes(request):
+    """
+    Muestra una lista de todas las tasas de interés.
+    """
+    tasas = TasaInteres.objects.all().order_by('nombre')
+    
+    context = {
+        'tasas': tasas,
+        'titulo_pagina': 'Tasas de Interés'
+    }
+    
+    return render(request, 'prestamos/lista_tasas_interes.html', context)
+
+
+@login_required
+def crear_tasa_interes(request):
+    """
+    Permite crear una nueva tasa de interés.
+    """
+    if request.method == 'POST':
+        form = TasaInteresForm(request.POST)
+        if form.is_valid():
+            try:
+                tasa = form.save()
+                messages.success(request, f'Tasa de interés "{tasa.nombre}" creada exitosamente.')
+                return redirect('prestamos:lista_tasas_interes')
+            except Exception as e:
+                messages.error(request, f'Error al crear la tasa de interés: {str(e)}')
+    else:
+        form = TasaInteresForm()
+    
+    context = {
+        'form': form,
+        'titulo_pagina': 'Crear Nueva Tasa de Interés'
+    }
+    
+    return render(request, 'prestamos/crear_tasa_interes.html', context)
+
+
+@login_required
+def editar_tasa_interes(request, pk):
+    """
+    Permite editar una tasa de interés existente.
+    """
+    tasa = get_object_or_404(TasaInteres, pk=pk)
+    
+    if request.method == 'POST':
+        form = TasaInteresForm(request.POST, instance=tasa)
+        if form.is_valid():
+            try:
+                tasa = form.save()
+                messages.success(request, f'Tasa de interés "{tasa.nombre}" actualizada exitosamente.')
+                return redirect('prestamos:lista_tasas_interes')
+            except Exception as e:
+                messages.error(request, f'Error al actualizar la tasa de interés: {str(e)}')
+    else:
+        form = TasaInteresForm(instance=tasa)
+    
+    context = {
+        'form': form,
+        'tasa': tasa,
+        'titulo_pagina': f'Editar Tasa de Interés - {tasa.nombre}'
+    }
+    
+    return render(request, 'prestamos/editar_tasa_interes.html', context)
+
+
+@login_required
+def eliminar_tasa_interes(request, pk):
+    """
+    Permite eliminar una tasa de interés.
+    """
+    tasa = get_object_or_404(TasaInteres, pk=pk)
+    
+    # Verificar si la tasa está siendo usada en algún préstamo
+    prestamos_con_tasa = Préstamo.objects.filter(tasa_interes=tasa).count()
+    
+    if request.method == 'POST':
+        try:
+            nombre_tasa = tasa.nombre
+            tasa.delete()
+            messages.success(request, f'Tasa de interés "{nombre_tasa}" eliminada exitosamente.')
+            return redirect('prestamos:lista_tasas_interes')
+        except Exception as e:
+            messages.error(request, f'Error al eliminar la tasa de interés: {str(e)}')
+    
+    context = {
+        'tasa': tasa,
+        'prestamos_con_tasa': prestamos_con_tasa,
+        'titulo_pagina': f'Eliminar Tasa de Interés - {tasa.nombre}'
+    }
+    
+    return render(request, 'prestamos/eliminar_tasa_interes.html', context)
